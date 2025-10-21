@@ -1,4 +1,3 @@
-version: '3.8'  # Versión de Docker Compose que usamos
 
 services:  # Aquí definimos TODOS los servicios (contenedores)
 
