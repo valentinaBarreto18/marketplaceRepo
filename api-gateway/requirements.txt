@@ -1,0 +1,13 @@
+# ========================================
+# API GATEWAY - REQUIREMENTS
+# ========================================
+
+# El API Gateway usa Nginx (escrito en C, no Python)
+# Por lo tanto, no necesita dependencias Python
+
+# Si en el futuro necesitas agregar algo como:
+# - Certbot para SSL
+# - Supervisord para monitoreo
+# Agrégalo aquí
+
+# Por ahora, este archivo se deja vacío o con un comentario

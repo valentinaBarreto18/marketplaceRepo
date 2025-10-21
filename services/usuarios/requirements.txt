@@ -1,0 +1,26 @@
+# ========================================
+# DEPENDENCIAS - SERVICIO USUARIOS
+# ========================================
+
+# Framework Web
+Django==4.2.7
+djangorestframework==3.14.0
+
+# Base de datos
+psycopg2-binary==2.9.9
+
+# Autenticación y Seguridad
+djangorestframework-simplejwt==5.3.0
+django-cors-headers==4.3.1
+
+# Servidor de producción
+gunicorn==21.2.0
+
+# Variables de entorno
+python-decouple==3.8
+
+# Validación y serialización
+Pillow==10.1.0
+
+# Utilidades
+requests==2.31.0

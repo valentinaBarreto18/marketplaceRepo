@@ -1,0 +1,142 @@
+version: '3.8'  # Versión de Docker Compose que usamos
+
+services:  # Aquí definimos TODOS los servicios (contenedores)
+
+  # ========================================
+  # 1️⃣ API GATEWAY - El "policía de tráfico"
+  # ========================================
+  api-gateway:
+    build: ./api-gateway  # Busca Dockerfile en esa carpeta
+    ports:
+      - "80:80"  # Puerto 80 de tu PC → Puerto 80 del contenedor
+    depends_on:  # "Espera a que estos inicien primero"
+      - usuarios-service
+      - productos-service
+      - pedidos-service
+    networks:
+      - ecommerce-network  # Todos se conectan por esta red
+    environment:
+      - NGINX_HOST=localhost
+      - NGINX_PORT=80
+
+  # ========================================
+  # 2️⃣ SERVICIO USUARIOS + SU BASE DE DATOS
+  # ========================================
+  usuarios-service:
+    build: ./services/usuarios
+    ports:
+      - "8001:8000"  # Tu PC:8001 → Contenedor:8000
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=django-insecure-tu-clave-secreta
+      - DATABASE_URL=postgresql://postgres:postgres@usuarios-db:5432/usuarios_db
+      - ALLOWED_HOSTS=localhost,127.0.0.1,usuarios-service
+    depends_on:
+      - usuarios-db
+    networks:
+      - ecommerce-network
+    command: >
+      sh -c "python manage.py migrate &&
+             gunicorn usuarios.wsgi:application --bind 0.0.0.0:8000"
+
+  usuarios-db:
+    image: postgres:15-alpine  # Descarga PostgreSQL 15
+    environment:
+      - POSTGRES_DB=usuarios_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - usuarios_db_data:/var/lib/postgresql/data  # Guarda datos aquí
+    networks:
+      - ecommerce-network
+
+  # ========================================
+  # 3️⃣ SERVICIO PRODUCTOS + SU BASE DE DATOS
+  # ========================================
+  productos-service:
+    build: ./services/productos
+    ports:
+      - "8002:8000"
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=django-insecure-tu-clave-secreta
+      - DATABASE_URL=postgresql://postgres:postgres@productos-db:5432/productos_db
+      - ALLOWED_HOSTS=localhost,127.0.0.1,productos-service
+    depends_on:
+      - productos-db
+    networks:
+      - ecommerce-network
+    command: >
+      sh -c "python manage.py migrate &&
+             gunicorn productos.wsgi:application --bind 0.0.0.0:8000"
+
+  productos-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=productos_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - productos_db_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce-network
+
+  # ========================================
+  # 4️⃣ SERVICIO PEDIDOS + SU BASE DE DATOS
+  # ========================================
+  pedidos-service:
+    build: ./services/pedidos
+    ports:
+      - "8003:8000"
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=django-insecure-tu-clave-secreta
+      - DATABASE_URL=postgresql://postgres:postgres@pedidos-db:5432/pedidos_db
+      - ALLOWED_HOSTS=localhost,127.0.0.1,pedidos-service
+    depends_on:
+      - pedidos-db
+    networks:
+      - ecommerce-network
+    command: >
+      sh -c "python manage.py migrate &&
+             gunicorn pedidos.wsgi:application --bind 0.0.0.0:8000"
+
+  pedidos-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=pedidos_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - pedidos_db_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce-network
+
+  # ========================================
+  # 5️⃣ FRONTEND - React
+  # ========================================
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"  # Vite corre en 5173
+    depends_on:
+      - api-gateway
+    networks:
+      - ecommerce-network
+    environment:
+      - VITE_API_URL=http://localhost
+
+# ========================================
+# VOLÚMENES - Donde se guardan los datos
+# ========================================
+volumes:
+  usuarios_db_data:      # Datos del servicio Usuarios
+  productos_db_data:     # Datos del servicio Productos
+  pedidos_db_data:       # Datos del servicio Pedidos
+
+# ========================================
+# REDES - Cómo se conectan entre sí
+# ========================================
+networks:
+  ecommerce-network:
+    driver: bridge  # "Puente" para que se comuniquen
